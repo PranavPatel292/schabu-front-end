@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Button } from 'react-bootstrap'
 import Question from './Question_data'
+import MicRecorder from 'mic-recorder-to-mp3'
 import './candidate.css'
 
+const Mp3Recorder = new MicRecorder({ bitRate: 128});
 
 class candidate extends React.Component {
 
@@ -11,7 +13,10 @@ class candidate extends React.Component {
 
         this.state = {
             myArray: Question,
-            questionCounter: 0
+            questionCounter: 0,
+            isRecording: false,
+            blobURL: '',
+            isBlocked: false,
         }
 
         this.nextButton = this.nextButton.bind(this)
@@ -46,6 +51,27 @@ class candidate extends React.Component {
             ))
         }
     }
+      start = () => {
+        if (this.state.isBlocked) {
+          console.log('Permission Denied');
+        } else {
+          Mp3Recorder
+            .start()
+            .then(() => {
+              this.setState({ isRecording: true });
+            }).catch((e) => console.error(e));
+        }
+      };
+      stop = () => {
+        Mp3Recorder
+          .stop()
+          .getMp3()
+          .then(([buffer, blob]) => {
+            const blobURL = URL.createObjectURL(blob)
+            this.setState({ blobURL, isRecording: false });
+          }).catch((e) => console.log(e));
+      };
+    
     render() {
         return (
             <div classNanme="candidate">
@@ -60,13 +86,17 @@ class candidate extends React.Component {
 
 
                                 <div className="row ">
-                                    <div className="col-12 col-lg-6">
-                                        <div className="row justify-content-center">
-                                            <Button type="button" className="btn-danger" onClick={this.recButton}>Recoarding</Button>
-                                        </div>
+                                     <div className="col-12 col-lg-6">
+                                        <button onClick={this.start} disabled={this.state.isRecording}>
+                                        Record
+                                        </button>
+                                        <button onClick={this.stop} disabled={!this.state.isRecording}>
+                                        Stop
+                                        </button>
+                                        <audio src={this.state.blobURL} controls="controls" />
                                     </div>
 
-                                    <div className="col-12 col-lg-6">
+                                <div className="col-12 col-lg-6">
                                         <div className="row justify-content-center">
                                             {this.state.questionCounter <= 8 ? <Button type="primary" onClick={this.nextButton}>Next</Button> : <Button type="primary">Finish</Button>}
                                         </div>
@@ -76,7 +106,7 @@ class candidate extends React.Component {
                         </div>
                     </div>
                 </div>
-            </div >
+            </div>
         )
     }
 }
